@@ -42,7 +42,9 @@ def import_yaml() -> None:
     try:
         import yaml
     except ImportError as e:
-        raise ImportError('PyYAML is not installed, run `pip install pydantic-settings[yaml]`') from e
+        raise ImportError(
+            "PyYAML is not installed, run `pip install pydantic-settings[yaml]`"
+        ) from e
 
 
 def import_toml() -> None:
@@ -54,7 +56,9 @@ def import_toml() -> None:
         try:
             import tomli
         except ImportError as e:
-            raise ImportError('tomli is not installed, run `pip install pydantic-settings[toml]`') from e
+            raise ImportError(
+                "tomli is not installed, run `pip install pydantic-settings[toml]`"
+            ) from e
     else:
         if tomllib is not None:
             return
@@ -63,12 +67,12 @@ def import_toml() -> None:
 
 DotenvType = Union[Path, str, List[Union[Path, str]], Tuple[Union[Path, str], ...]]
 PathType = Union[Path, str, List[Union[Path, str]], Tuple[Union[Path, str], ...]]
-DEFAULT_PATH: PathType = Path('')
+DEFAULT_PATH: PathType = Path("")
 
 # This is used as default value for `_env_file` in the `BaseSettings` class and
 # `env_file` in `DotEnvSettingsSource` so the default can be distinguished from `None`.
 # See the docstring of `BaseSettings` for more details.
-ENV_FILE_SENTINEL: DotenvType = Path('')
+ENV_FILE_SENTINEL: DotenvType = Path("")
 
 
 class EnvNoneType(str):
@@ -89,7 +93,9 @@ class PydanticBaseSettingsSource(ABC):
         self.config = settings_cls.model_config
 
     @abstractmethod
-    def get_field_value(self, field: FieldInfo, field_name: str) -> tuple[Any, str, bool]:
+    def get_field_value(
+        self, field: FieldInfo, field_name: str
+    ) -> tuple[Any, str, bool]:
         """
         Gets the value, the key for model creation, and a flag to determine whether value is complex.
 
@@ -116,7 +122,9 @@ class PydanticBaseSettingsSource(ABC):
         """
         return _annotation_is_complex(field.annotation, field.metadata)
 
-    def prepare_field_value(self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool) -> Any:
+    def prepare_field_value(
+        self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool
+    ) -> Any:
         """
         Prepares the value of a field.
 
@@ -133,7 +141,9 @@ class PydanticBaseSettingsSource(ABC):
             return self.decode_complex_value(field_name, field, value)
         return value
 
-    def decode_complex_value(self, field_name: str, field: FieldInfo, value: Any) -> Any:
+    def decode_complex_value(
+        self, field_name: str, field: FieldInfo, value: Any
+    ) -> Any:
         """
         Decode the value for a complex field
 
@@ -161,15 +171,17 @@ class InitSettingsSource(PydanticBaseSettingsSource):
         self.init_kwargs = init_kwargs
         super().__init__(settings_cls)
 
-    def get_field_value(self, field: FieldInfo, field_name: str) -> tuple[Any, str, bool]:
+    def get_field_value(
+        self, field: FieldInfo, field_name: str
+    ) -> tuple[Any, str, bool]:
         # Nothing to do here. Only implement the return statement to make mypy happy
-        return None, '', False
+        return None, "", False
 
     def __call__(self) -> dict[str, Any]:
         return self.init_kwargs
 
     def __repr__(self) -> str:
-        return f'InitSettingsSource(init_kwargs={self.init_kwargs!r})'
+        return f"InitSettingsSource(init_kwargs={self.init_kwargs!r})"
 
 
 class PydanticBaseEnvSettingsSource(PydanticBaseSettingsSource):
@@ -183,20 +195,36 @@ class PydanticBaseEnvSettingsSource(PydanticBaseSettingsSource):
         env_parse_enums: bool | None = None,
     ) -> None:
         super().__init__(settings_cls)
-        self.case_sensitive = case_sensitive if case_sensitive is not None else self.config.get('case_sensitive', False)
-        self.env_prefix = env_prefix if env_prefix is not None else self.config.get('env_prefix', '')
+        self.case_sensitive = (
+            case_sensitive
+            if case_sensitive is not None
+            else self.config.get("case_sensitive", False)
+        )
+        self.env_prefix = (
+            env_prefix if env_prefix is not None else self.config.get("env_prefix", "")
+        )
         self.env_ignore_empty = (
-            env_ignore_empty if env_ignore_empty is not None else self.config.get('env_ignore_empty', False)
+            env_ignore_empty
+            if env_ignore_empty is not None
+            else self.config.get("env_ignore_empty", False)
         )
         self.env_parse_none_str = (
-            env_parse_none_str if env_parse_none_str is not None else self.config.get('env_parse_none_str')
+            env_parse_none_str
+            if env_parse_none_str is not None
+            else self.config.get("env_parse_none_str")
         )
-        self.env_parse_enums = env_parse_enums if env_parse_enums is not None else self.config.get('env_parse_enums')
+        self.env_parse_enums = (
+            env_parse_enums
+            if env_parse_enums is not None
+            else self.config.get("env_parse_enums")
+        )
 
     def _apply_case_sensitive(self, value: str) -> str:
         return value.lower() if not self.case_sensitive else value
 
-    def _extract_field_info(self, field: FieldInfo, field_name: str) -> list[tuple[str, str, bool]]:
+    def _extract_field_info(
+        self, field: FieldInfo, field_name: str
+    ) -> list[tuple[str, str, bool]]:
         """
         Extracts field info. This info is used to get the value of field from environment variables.
 
@@ -215,7 +243,9 @@ class PydanticBaseEnvSettingsSource(PydanticBaseSettingsSource):
         """
         field_info: list[tuple[str, str, bool]] = []
         if isinstance(field.validation_alias, (AliasChoices, AliasPath)):
-            v_alias: str | list[str | int] | list[list[str | int]] | None = field.validation_alias.convert_to_aliases()
+            v_alias: str | list[str | int] | list[list[str | int]] | None = (
+                field.validation_alias.convert_to_aliases()
+            )
         else:
             v_alias = field.validation_alias
 
@@ -223,22 +253,50 @@ class PydanticBaseEnvSettingsSource(PydanticBaseSettingsSource):
             if isinstance(v_alias, list):  # AliasChoices, AliasPath
                 for alias in v_alias:
                     if isinstance(alias, str):  # AliasPath
-                        field_info.append((alias, self._apply_case_sensitive(alias), True if len(alias) > 1 else False))
-                    elif isinstance(alias, list):  # AliasChoices
-                        first_arg = cast(str, alias[0])  # first item of an AliasChoices must be a str
                         field_info.append(
-                            (first_arg, self._apply_case_sensitive(first_arg), True if len(alias) > 1 else False)
+                            (
+                                alias,
+                                self._apply_case_sensitive(alias),
+                                True if len(alias) > 1 else False,
+                            )
+                        )
+                    elif isinstance(alias, list):  # AliasChoices
+                        first_arg = cast(
+                            str, alias[0]
+                        )  # first item of an AliasChoices must be a str
+                        field_info.append(
+                            (
+                                first_arg,
+                                self._apply_case_sensitive(first_arg),
+                                True if len(alias) > 1 else False,
+                            )
                         )
             else:  # string validation alias
                 field_info.append((v_alias, self._apply_case_sensitive(v_alias), False))
-        elif origin_is_union(get_origin(field.annotation)) and _union_is_complex(field.annotation, field.metadata):
-            field_info.append((field_name, self._apply_case_sensitive(self.env_prefix + field_name), True))
+        elif origin_is_union(get_origin(field.annotation)) and _union_is_complex(
+            field.annotation, field.metadata
+        ):
+            field_info.append(
+                (
+                    field_name,
+                    self._apply_case_sensitive(self.env_prefix + field_name),
+                    True,
+                )
+            )
         else:
-            field_info.append((field_name, self._apply_case_sensitive(self.env_prefix + field_name), False))
+            field_info.append(
+                (
+                    field_name,
+                    self._apply_case_sensitive(self.env_prefix + field_name),
+                    False,
+                )
+            )
 
         return field_info
 
-    def _replace_field_names_case_insensitively(self, field: FieldInfo, field_values: dict[str, Any]) -> dict[str, Any]:
+    def _replace_field_names_case_insensitively(
+        self, field: FieldInfo, field_values: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Replace field names in values dict by looking in models fields insensitively.
 
@@ -276,13 +334,16 @@ class PydanticBaseEnvSettingsSource(PydanticBaseSettingsSource):
 
             # This is here to make mypy happy
             # Item "None" of "Optional[Type[Any]]" has no attribute "model_fields"
-            if not field.annotation or not hasattr(field.annotation, 'model_fields'):
+            if not field.annotation or not hasattr(field.annotation, "model_fields"):
                 values[name] = value
                 continue
 
             # Find field in sub model by looking in fields case insensitively
             for sub_model_field_name, f in field.annotation.model_fields.items():
-                if not f.validation_alias and sub_model_field_name.lower() == name.lower():
+                if (
+                    not f.validation_alias
+                    and sub_model_field_name.lower() == name.lower()
+                ):
                     sub_model_field = f
                     break
 
@@ -290,14 +351,20 @@ class PydanticBaseEnvSettingsSource(PydanticBaseSettingsSource):
                 values[name] = value
                 continue
 
-            if lenient_issubclass(sub_model_field.annotation, BaseModel) and isinstance(value, dict):
-                values[sub_model_field_name] = self._replace_field_names_case_insensitively(sub_model_field, value)
+            if lenient_issubclass(sub_model_field.annotation, BaseModel) and isinstance(
+                value, dict
+            ):
+                values[sub_model_field_name] = (
+                    self._replace_field_names_case_insensitively(sub_model_field, value)
+                )
             else:
                 values[sub_model_field_name] = value
 
         return values
 
-    def _replace_env_none_type_values(self, field_value: dict[str, Any]) -> dict[str, Any]:
+    def _replace_env_none_type_values(
+        self, field_value: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Recursively parse values that are of "None" type(EnvNoneType) to `None` type(None).
         """
@@ -305,7 +372,11 @@ class PydanticBaseEnvSettingsSource(PydanticBaseSettingsSource):
 
         for key, value in field_value.items():
             if not isinstance(value, EnvNoneType):
-                values[key] = value if not isinstance(value, dict) else self._replace_env_none_type_values(value)
+                values[key] = (
+                    value
+                    if not isinstance(value, dict)
+                    else self._replace_env_none_type_values(value)
+                )
             else:
                 values[key] = None
 
@@ -316,14 +387,18 @@ class PydanticBaseEnvSettingsSource(PydanticBaseSettingsSource):
 
         for field_name, field in self.settings_cls.model_fields.items():
             try:
-                field_value, field_key, value_is_complex = self.get_field_value(field, field_name)
+                field_value, field_key, value_is_complex = self.get_field_value(
+                    field, field_name
+                )
             except Exception as e:
                 raise SettingsError(
                     f'error getting value for field "{field_name}" from source "{self.__class__.__name__}"'
                 ) from e
 
             try:
-                field_value = self.prepare_field_value(field_name, field, field_value, value_is_complex)
+                field_value = self.prepare_field_value(
+                    field_name, field, field_value, value_is_complex
+                )
             except ValueError as e:
                 raise SettingsError(
                     f'error parsing value for field "{field_name}" from source "{self.__class__.__name__}"'
@@ -340,7 +415,9 @@ class PydanticBaseEnvSettingsSource(PydanticBaseSettingsSource):
                     and lenient_issubclass(field.annotation, BaseModel)
                     and isinstance(field_value, dict)
                 ):
-                    data[field_key] = self._replace_field_names_case_insensitively(field, field_value)
+                    data[field_key] = self._replace_field_names_case_insensitively(
+                        field, field_value
+                    )
                 else:
                     data[field_key] = field_value
 
@@ -363,9 +440,16 @@ class SecretsSettingsSource(PydanticBaseEnvSettingsSource):
         env_parse_enums: bool | None = None,
     ) -> None:
         super().__init__(
-            settings_cls, case_sensitive, env_prefix, env_ignore_empty, env_parse_none_str, env_parse_enums
+            settings_cls,
+            case_sensitive,
+            env_prefix,
+            env_ignore_empty,
+            env_parse_none_str,
+            env_parse_enums,
         )
-        self.secrets_dir = secrets_dir if secrets_dir is not None else self.config.get('secrets_dir')
+        self.secrets_dir = (
+            secrets_dir if secrets_dir is not None else self.config.get("secrets_dir")
+        )
 
     def __call__(self) -> dict[str, Any]:
         """
@@ -383,12 +467,16 @@ class SecretsSettingsSource(PydanticBaseEnvSettingsSource):
             return secrets
 
         if not self.secrets_path.is_dir():
-            raise SettingsError(f'secrets_dir must reference a directory, not a {path_type_label(self.secrets_path)}')
+            raise SettingsError(
+                f"secrets_dir must reference a directory, not a {path_type_label(self.secrets_path)}"
+            )
 
         return super().__call__()
 
     @classmethod
-    def find_case_path(cls, dir_path: Path, file_name: str, case_sensitive: bool) -> Path | None:
+    def find_case_path(
+        cls, dir_path: Path, file_name: str, case_sensitive: bool
+    ) -> Path | None:
         """
         Find a file within path's directory matching filename, optionally ignoring case.
 
@@ -407,7 +495,9 @@ class SecretsSettingsSource(PydanticBaseEnvSettingsSource):
                 return f
         return None
 
-    def get_field_value(self, field: FieldInfo, field_name: str) -> tuple[Any, str, bool]:
+    def get_field_value(
+        self, field: FieldInfo, field_name: str
+    ) -> tuple[Any, str, bool]:
         """
         Gets the value for field from secret file and a flag to determine whether value is complex.
 
@@ -420,7 +510,9 @@ class SecretsSettingsSource(PydanticBaseEnvSettingsSource):
                 a flag to determine whether value is complex.
         """
 
-        for field_key, env_name, value_is_complex in self._extract_field_info(field, field_name):
+        for field_key, env_name, value_is_complex in self._extract_field_info(
+            field, field_name
+        ):
             path = self.find_case_path(self.secrets_path, env_name, self.case_sensitive)
             if not path:
                 # path does not exist, we currently don't return a warning for this
@@ -437,7 +529,7 @@ class SecretsSettingsSource(PydanticBaseEnvSettingsSource):
         return None, field_key, value_is_complex
 
     def __repr__(self) -> str:
-        return f'SecretsSettingsSource(secrets_dir={self.secrets_dir!r})'
+        return f"SecretsSettingsSource(secrets_dir={self.secrets_dir!r})"
 
 
 class EnvSettingsSource(PydanticBaseEnvSettingsSource):
@@ -456,19 +548,33 @@ class EnvSettingsSource(PydanticBaseEnvSettingsSource):
         env_parse_enums: bool | None = None,
     ) -> None:
         super().__init__(
-            settings_cls, case_sensitive, env_prefix, env_ignore_empty, env_parse_none_str, env_parse_enums
+            settings_cls,
+            case_sensitive,
+            env_prefix,
+            env_ignore_empty,
+            env_parse_none_str,
+            env_parse_enums,
         )
         self.env_nested_delimiter = (
-            env_nested_delimiter if env_nested_delimiter is not None else self.config.get('env_nested_delimiter')
+            env_nested_delimiter
+            if env_nested_delimiter is not None
+            else self.config.get("env_nested_delimiter")
         )
         self.env_prefix_len = len(self.env_prefix)
 
         self.env_vars = self._load_env_vars()
 
     def _load_env_vars(self) -> Mapping[str, str | None]:
-        return parse_env_vars(os.environ, self.case_sensitive, self.env_ignore_empty, self.env_parse_none_str)
+        return parse_env_vars(
+            os.environ,
+            self.case_sensitive,
+            self.env_ignore_empty,
+            self.env_parse_none_str,
+        )
 
-    def get_field_value(self, field: FieldInfo, field_name: str) -> tuple[Any, str, bool]:
+    def get_field_value(
+        self, field: FieldInfo, field_name: str
+    ) -> tuple[Any, str, bool]:
         """
         Gets the value for field from environment variables and a flag to determine whether value is complex.
 
@@ -482,14 +588,18 @@ class EnvSettingsSource(PydanticBaseEnvSettingsSource):
         """
 
         env_val: str | None = None
-        for field_key, env_name, value_is_complex in self._extract_field_info(field, field_name):
+        for field_key, env_name, value_is_complex in self._extract_field_info(
+            field, field_name
+        ):
             env_val = self.env_vars.get(env_name)
             if env_val is not None:
                 break
 
         return env_val, field_key, value_is_complex
 
-    def prepare_field_value(self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool) -> Any:
+    def prepare_field_value(
+        self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool
+    ) -> Any:
         """
         Prepare value for the field.
 
@@ -526,7 +636,9 @@ class EnvSettingsSource(PydanticBaseEnvSettingsSource):
                         raise e
 
                 if isinstance(value, dict):
-                    return deep_update(value, self.explode_env_vars(field_name, field, self.env_vars))
+                    return deep_update(
+                        value, self.explode_env_vars(field_name, field, self.env_vars)
+                    )
                 else:
                     return value
         elif value is not None:
@@ -539,7 +651,9 @@ class EnvSettingsSource(PydanticBaseEnvSettingsSource):
         """
         if self.field_is_complex(field):
             allow_parse_failure = False
-        elif origin_is_union(get_origin(field.annotation)) and _union_is_complex(field.annotation, field.metadata):
+        elif origin_is_union(get_origin(field.annotation)) and _union_is_complex(
+            field.annotation, field.metadata
+        ):
             allow_parse_failure = True
         else:
             return False, False
@@ -580,7 +694,9 @@ class EnvSettingsSource(PydanticBaseEnvSettingsSource):
             return None
 
         annotation = field.annotation if isinstance(field, FieldInfo) else field
-        if origin_is_union(get_origin(annotation)) or isinstance(annotation, WithArgsTypes):
+        if origin_is_union(get_origin(annotation)) or isinstance(
+            annotation, WithArgsTypes
+        ):
             for type_ in get_args(annotation):
                 type_has_key = EnvSettingsSource.next_field(type_, key)
                 if type_has_key:
@@ -590,7 +706,9 @@ class EnvSettingsSource(PydanticBaseEnvSettingsSource):
 
         return None
 
-    def explode_env_vars(self, field_name: str, field: FieldInfo, env_vars: Mapping[str, str | None]) -> dict[str, Any]:
+    def explode_env_vars(
+        self, field_name: str, field: FieldInfo, env_vars: Mapping[str, str | None]
+    ) -> dict[str, Any]:
         """
         Process env_vars and extract the values of keys containing env_nested_delimiter into nested dictionaries.
 
@@ -607,7 +725,8 @@ class EnvSettingsSource(PydanticBaseEnvSettingsSource):
         is_dict = lenient_issubclass(get_origin(field.annotation), dict)
 
         prefixes = [
-            f'{env_name}{self.env_nested_delimiter}' for _, env_name, _ in self._extract_field_info(field, field_name)
+            f"{env_name}{self.env_nested_delimiter}"
+            for _, env_name, _ in self._extract_field_info(field, field_name)
         ]
         result: dict[str, Any] = {}
         for env_name, env_val in env_vars.items():
@@ -615,7 +734,9 @@ class EnvSettingsSource(PydanticBaseEnvSettingsSource):
                 continue
             # we remove the prefix before splitting in case the prefix has characters in common with the delimiter
             env_name_without_prefix = env_name[self.env_prefix_len :]
-            _, *keys, last_key = env_name_without_prefix.split(self.env_nested_delimiter)
+            _, *keys, last_key = env_name_without_prefix.split(
+                self.env_nested_delimiter
+            )
             env_var = result
             target_field: FieldInfo | None = field
             for key in keys:
@@ -628,7 +749,9 @@ class EnvSettingsSource(PydanticBaseEnvSettingsSource):
             # check if env_val maps to a complex field and if so, parse the env_val
             if (target_field or is_dict) and env_val:
                 if target_field:
-                    is_complex, allow_json_failure = self._field_is_complex(target_field)
+                    is_complex, allow_json_failure = self._field_is_complex(
+                        target_field
+                    )
                 else:
                     # nested field type is dict
                     is_complex, allow_json_failure = True, False
@@ -638,14 +761,16 @@ class EnvSettingsSource(PydanticBaseEnvSettingsSource):
                     except ValueError as e:
                         if not allow_json_failure:
                             raise e
-            env_var[last_key] = env_val
+
+            if isinstance(env_var, dict):
+                env_var[last_key] = env_val
 
         return result
 
     def __repr__(self) -> str:
         return (
-            f'EnvSettingsSource(env_nested_delimiter={self.env_nested_delimiter!r}, '
-            f'env_prefix_len={self.env_prefix_len!r})'
+            f"EnvSettingsSource(env_nested_delimiter={self.env_nested_delimiter!r}, "
+            f"env_prefix_len={self.env_prefix_len!r})"
         )
 
 
@@ -666,9 +791,15 @@ class DotEnvSettingsSource(EnvSettingsSource):
         env_parse_none_str: str | None = None,
         env_parse_enums: bool | None = None,
     ) -> None:
-        self.env_file = env_file if env_file != ENV_FILE_SENTINEL else settings_cls.model_config.get('env_file')
+        self.env_file = (
+            env_file
+            if env_file != ENV_FILE_SENTINEL
+            else settings_cls.model_config.get("env_file")
+        )
         self.env_file_encoding = (
-            env_file_encoding if env_file_encoding is not None else settings_cls.model_config.get('env_file_encoding')
+            env_file_encoding
+            if env_file_encoding is not None
+            else settings_cls.model_config.get("env_file_encoding")
         )
         super().__init__(
             settings_cls,
@@ -709,7 +840,7 @@ class DotEnvSettingsSource(EnvSettingsSource):
 
     def __call__(self) -> dict[str, Any]:
         data: dict[str, Any] = super().__call__()
-        is_extra_allowed = self.config.get('extra') != 'forbid'
+        is_extra_allowed = self.config.get("extra") != "forbid"
 
         # As `extra` config is allowed in dotenv settings source, We have to
         # update data with extra env variables from dotenv file.
@@ -733,8 +864,8 @@ class DotEnvSettingsSource(EnvSettingsSource):
 
     def __repr__(self) -> str:
         return (
-            f'DotEnvSettingsSource(env_file={self.env_file!r}, env_file_encoding={self.env_file_encoding!r}, '
-            f'env_nested_delimiter={self.env_nested_delimiter!r}, env_prefix_len={self.env_prefix_len!r})'
+            f"DotEnvSettingsSource(env_file={self.env_file!r}, env_file_encoding={self.env_file_encoding!r}, "
+            f"env_nested_delimiter={self.env_nested_delimiter!r}, env_prefix_len={self.env_prefix_len!r})"
         )
 
 
@@ -767,11 +898,15 @@ class JsonConfigSettingsSource(InitSettingsSource, ConfigFileSourceMixin):
         json_file: PathType | None = DEFAULT_PATH,
         json_file_encoding: str | None = None,
     ):
-        self.json_file_path = json_file if json_file != DEFAULT_PATH else settings_cls.model_config.get('json_file')
+        self.json_file_path = (
+            json_file
+            if json_file != DEFAULT_PATH
+            else settings_cls.model_config.get("json_file")
+        )
         self.json_file_encoding = (
             json_file_encoding
             if json_file_encoding is not None
-            else settings_cls.model_config.get('json_file_encoding')
+            else settings_cls.model_config.get("json_file_encoding")
         )
         self.json_data = self._read_files(self.json_file_path)
         super().__init__(settings_cls, self.json_data)
@@ -791,13 +926,17 @@ class TomlConfigSettingsSource(InitSettingsSource, ConfigFileSourceMixin):
         settings_cls: type[BaseSettings],
         toml_file: PathType | None = DEFAULT_PATH,
     ):
-        self.toml_file_path = toml_file if toml_file != DEFAULT_PATH else settings_cls.model_config.get('toml_file')
+        self.toml_file_path = (
+            toml_file
+            if toml_file != DEFAULT_PATH
+            else settings_cls.model_config.get("toml_file")
+        )
         self.toml_data = self._read_files(self.toml_file_path)
         super().__init__(settings_cls, self.toml_data)
 
     def _read_file(self, file_path: Path) -> dict[str, Any]:
         import_toml()
-        with open(file_path, mode='rb') as toml_file:
+        with open(file_path, mode="rb") as toml_file:
             if sys.version_info < (3, 11):
                 return tomli.load(toml_file)
             return tomllib.load(toml_file)
@@ -814,10 +953,10 @@ class PyprojectTomlConfigSettingsSource(TomlConfigSettingsSource):
         toml_file: Path | None = None,
     ) -> None:
         self.toml_file_path = self._pick_pyproject_toml_file(
-            toml_file, settings_cls.model_config.get('pyproject_toml_depth', 0)
+            toml_file, settings_cls.model_config.get("pyproject_toml_depth", 0)
         )
         self.toml_table_header: tuple[str, ...] = settings_cls.model_config.get(
-            'pyproject_toml_table_header', ('tool', 'pydantic-settings')
+            "pyproject_toml_table_header", ("tool", "pydantic-settings")
         )
         self.toml_data = self._read_files(self.toml_file_path)
         for key in self.toml_table_header:
@@ -835,16 +974,16 @@ class PyprojectTomlConfigSettingsSource(TomlConfigSettingsSource):
         """
         if provided:
             return provided.resolve()
-        rv = Path.cwd() / 'pyproject.toml'
+        rv = Path.cwd() / "pyproject.toml"
         count = 0
         if not rv.is_file():
-            child = rv.parent.parent / 'pyproject.toml'
+            child = rv.parent.parent / "pyproject.toml"
             while count < depth:
                 if child.is_file():
                     return child
                 if str(child.parent) == rv.root:
                     break  # end discovery after checking system root once
-                child = child.parent.parent / 'pyproject.toml'
+                child = child.parent.parent / "pyproject.toml"
                 count += 1
         return rv
 
@@ -860,11 +999,15 @@ class YamlConfigSettingsSource(InitSettingsSource, ConfigFileSourceMixin):
         yaml_file: PathType | None = DEFAULT_PATH,
         yaml_file_encoding: str | None = None,
     ):
-        self.yaml_file_path = yaml_file if yaml_file != DEFAULT_PATH else settings_cls.model_config.get('yaml_file')
+        self.yaml_file_path = (
+            yaml_file
+            if yaml_file != DEFAULT_PATH
+            else settings_cls.model_config.get("yaml_file")
+        )
         self.yaml_file_encoding = (
             yaml_file_encoding
             if yaml_file_encoding is not None
-            else settings_cls.model_config.get('yaml_file_encoding')
+            else settings_cls.model_config.get("yaml_file_encoding")
         )
         self.yaml_data = self._read_files(self.yaml_file_path)
         super().__init__(settings_cls, self.yaml_data)
@@ -879,8 +1022,14 @@ def _get_env_var_key(key: str, case_sensitive: bool = False) -> str:
     return key if case_sensitive else key.lower()
 
 
-def _parse_env_none_str(value: str | None, parse_none_str: str | None = None) -> str | None | EnvNoneType:
-    return value if not (value == parse_none_str and parse_none_str is not None) else EnvNoneType(value)
+def _parse_env_none_str(
+    value: str | None, parse_none_str: str | None = None
+) -> str | None | EnvNoneType:
+    return (
+        value
+        if not (value == parse_none_str and parse_none_str is not None)
+        else EnvNoneType(value)
+    )
 
 
 def parse_env_vars(
@@ -892,7 +1041,7 @@ def parse_env_vars(
     return {
         _get_env_var_key(k, case_sensitive): _parse_env_none_str(v, parse_none_str)
         for k, v in env_vars.items()
-        if not (ignore_empty and v == '')
+        if not (ignore_empty and v == "")
     }
 
 
@@ -904,7 +1053,9 @@ def read_env_file(
     ignore_empty: bool = False,
     parse_none_str: str | None = None,
 ) -> Mapping[str, str | None]:
-    file_vars: dict[str, str | None] = dotenv_values(file_path, encoding=encoding or 'utf8')
+    file_vars: dict[str, str | None] = dotenv_values(
+        file_path, encoding=encoding or "utf8"
+    )
     return parse_env_vars(file_vars, case_sensitive, ignore_empty, parse_none_str)
 
 
@@ -915,8 +1066,8 @@ def _annotation_is_complex(annotation: type[Any] | None, metadata: list[Any]) ->
     return (
         _annotation_is_complex_inner(annotation)
         or _annotation_is_complex_inner(origin)
-        or hasattr(origin, '__pydantic_core_schema__')
-        or hasattr(origin, '__get_pydantic_core_schema__')
+        or hasattr(origin, "__pydantic_core_schema__")
+        or hasattr(origin, "__get_pydantic_core_schema__")
     )
 
 
@@ -924,9 +1075,9 @@ def _annotation_is_complex_inner(annotation: type[Any] | None) -> bool:
     if lenient_issubclass(annotation, (str, bytes)):
         return False
 
-    return lenient_issubclass(annotation, (BaseModel, Mapping, Sequence, tuple, set, frozenset, deque)) or is_dataclass(
-        annotation
-    )
+    return lenient_issubclass(
+        annotation, (BaseModel, Mapping, Sequence, tuple, set, frozenset, deque)
+    ) or is_dataclass(annotation)
 
 
 def _union_is_complex(annotation: type[Any] | None, metadata: list[Any]) -> bool:
